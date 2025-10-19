@@ -18,8 +18,10 @@ def get_department_courses(department_name):
 def transform_course(api_course):
     course_dict = {}
     course_dict["code"] = api_course['id']
+    course_dict["course_number"] = api_course['courseNumeric']
     course_dict["name"] = api_course['title']
     course_dict["prerequisites"] = [d['id'] for d in api_course['prerequisites']]
+    course_dict["prereq_tree"] = api_course['prerequisiteTree']
     course_dict["credits"] = api_course['minUnits']
     course_dict["description"] = api_course['description']
     course_dict["offered_quarters"] = api_course['terms']
@@ -28,18 +30,28 @@ def transform_course(api_course):
 
 
 if __name__ == "__main__":
-    dep_data = get_department_courses("COMPSCI")
-    if dep_data:
-        transformed_courses = []
-        for course in dep_data["data"]:
-            transformed = transform_course(course)
-            transformed_courses.append(transformed)
-        
-        courses_dict = {}
-        courses_dict["courses"] =  transformed_courses
+    departments = ["COMPSCI", "I%26C%20SCI", "IN4MATX"]  # Add your departments here
 
-        with open("../data/courses.json", "w") as f:
-            json.dump(courses_dict, f, indent=4)
+    all_courses = []
+
+    for department in departments:
+        print(f"Fetching courses for {department}...")
+        dep_data = get_department_courses(department)
+
+        if dep_data:
+            for course in dep_data["data"]:
+                transformed = transform_course(course)
+                all_courses.append(transformed)
+            print(f"Added {len(dep_data['data'])} courses from {department}")
+        else:
+            print(f"Failed to fetch data for {department}")
+
+    courses_dict = {"courses": all_courses}
+
+    with open("../data/courses.json", "w") as f:
+        json.dump(courses_dict, f, indent=4)
+
+    print(f"\nTotal courses saved: {len(all_courses)}")
 
 
 

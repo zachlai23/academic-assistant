@@ -22,7 +22,7 @@ async def agent(user_message: str, conversation_id: str):
                     "completed_courses": {
                         "type": "array",
                         "items": {"type": "string"},
-                        "description": "List of course codes the student completed."
+                        "description": "List of course codes the student completed.(format: COMPSCI171 with no spaces)"
                     },
                     "major": {
                         "type": "string",

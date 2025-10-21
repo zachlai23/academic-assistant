@@ -12,7 +12,7 @@ def extract_degreeworks_text(pdf_path):
     return text
 
 # Extract department/codes from line
-# return list with codes extracted from line
+# return list with course objects that match the codes
 def course_codes(line, data):
     all_courses = []
     department = ""
@@ -30,6 +30,8 @@ def course_codes(line, data):
             if ':' in s:
                 ranges = s.split(':')
 
+                # Loop through all courses and keep numbers if an actual course matches
+                # More efficient way? Will have lots more courses when expand to all majors
                 for course in data["courses"]:
                     if department in course['code']:
                         match = re.search(r'(\d+)([A-Za-z]*)', course['code'])
@@ -37,11 +39,15 @@ def course_codes(line, data):
                         full_code = match.group(0)
 
                         if numeric >= int(ranges[0]) and numeric <= int(ranges[1]):
-                            all_courses.append(department + full_code)
+                            all_courses.append(course)
             else:
                 s = s.replace('@', 'A')
                 dep_and_code = department + s
-                all_courses.append(dep_and_code)
+                # Find matching course object
+                for course in data["courses"]:
+                    if course['code'] == dep_and_code:
+                        all_courses.append(course)
+                        break
 
     return all_courses
 
@@ -106,11 +112,15 @@ def parse_still_needed_lines(text):
             i += 1
     return still_needed
 
-if __name__ == "__main__":
+def parse_degreeworks(filepath):
     with open('../data/courses.json', 'r') as f:
         course_data = json.load(f)
 
-    text = extract_degreeworks_text("/Users/zacharylai/Desktop/zach_degreeworks.pdf")
+    text = extract_degreeworks_text(filepath)
     still_needed_lines = parse_still_needed_lines(text)
     codes_final = clean_lines(still_needed_lines, course_data)
-    pprint(codes_final)
+    return codes_final
+
+if __name__ == "__main__":
+    codes = parse_degreeworks("/Users/zacharylai/Desktop/zach_degreeworks.pdf")
+    pprint(codes)

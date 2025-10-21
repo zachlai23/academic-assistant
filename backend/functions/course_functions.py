@@ -2,57 +2,33 @@
 import json 
 import asyncio
 import os
+from pprint import pprint
 
-# Course selection functions for llm to call
+import sys
+from pathlib import Path
 
-# Recommends courses based on completed courses
-# Recommend courses with more prereqs completed
-# Calculate score - higher score = better recommendation, sort based on score and return top 3
+# Add parent directory to path
+sys.path.append(str(Path(__file__).parent.parent))
 
-# Loop through all courses
-# Call scoring function
-# Sort courses descending by score
-# Return top 3 courses
+from utils.parse_degreeworks import parse_degreeworks
 
-#SCORING FUNCTION
-# Input: course object, prereqs -  Output: score
-# if course already completed, score -1, move on
-# if not all prereqs met, score 0, move on
-# if all prereqs met, +1 for each prereq met
-
-async def recommend_courses(completed_courses=None, major="Computer Science", num_recommendations=3):
+# Returns list of courses that user can take based on prereqs + is required for graduation
+async def rec_degreeworks_courses(completed_courses=None, major="Computer Science"):
+    courses_grad_reqs = parse_degreeworks("/Users/zacharylai/Desktop/zach_degreeworks.pdf")
     course_recs = []
-    with open('data/courses.json', 'r') as file:
-        data = json.load(file)
 
-        if completed_courses == None:
-            completed_courses = []
-        
-        print("Completed courses: ", completed_courses)
+    # Loop through course requirements
+    for requiredCt, courses in courses_grad_reqs.items():
+        for course_list in courses:
+            for course in course_list:
+                if check_prereq(course, completed_courses):
+                    course_recs.append([course['code'], course['name'], course['description']])
 
-        courses_to_score = await possible_courses(data, completed_courses) # Find courses user passes prereqs for
-
-        print(f"Possible Courses: {[course['code'] for course in courses_to_score]}")
-        # Loop through each possible course
-        for possible_course in courses_to_score:
-            score = await course_scoring(completed_courses, possible_course)
-            course_recs.append((score, [possible_course['code'], possible_course['name'], possible_course['description']]))
-
-        # Sort courses descending by score
-        course_recs.sort(reverse=True, key=lambda x: x[0])
-
-        # Return top 3 courses
-        return course_recs[:num_recommendations]
-
-async def course_scoring(completed_courses=None, course=None):
-    if completed_courses is None:
-        completed_courses = []
-
-    score = sum(1 for prereq in course['prerequisites'] if prereq in completed_courses)
-    return score
+    return course_recs
 
 # Checks if user can take given course based on prereqs
-def can_take_course(course, completed_courses=None):
+# Input is course object
+def check_prereq(course, completed_courses=None):
     if completed_courses is None:
         completed_courses = []
     return all(prereq in completed_courses for prereq in course['prerequisites'])
@@ -73,25 +49,20 @@ if __name__ == "__main__":
     import asyncio
     
     async def test():
-        # Load a course to test with
         with open('../data/courses.json', 'r') as f:
             data = json.load(f)
 
-        print(possible_courses(data, ['COMPSCI171', 'COMPSCI178'])[0]['code'])
-            
-        # # Test with CS 175 (requires CS 101)
-        # cs175 = next(c for c in data['courses'] if c['code'] == 'COMPSCI175')
-        
-        # # Test case 1: Student has CS 101
-        # result1 = can_take_course(cs175, ['COMPSCI171', 'COMPSCI178'])
-        # print(f"Can take CS 175 with CS 171 completed: {result1}")  # Should be True
-        
-        # # Test case 2: Student doesn't have prerequisites  
-        # result2 = can_take_course(cs175, [])
-        # print(f"Can take CS 175 with no courses: {result2}")  # Should be False
+        courses = await rec_degreeworks_courses(["I&CSCI6D",
+                "MATH3A",
+                "I&CSCI6N",
+                "MATH2B",
+                "I&CSCI46",
+                "CSE46",
+                "COMPSCI112",
+                "COMPSCI116",
+                "COMPSCI171",
+                "COMPSCI178"])
 
-        # # Test case 1: Student has CS 101
-        # result3 = can_take_course(cs175, ['COMPSCI171'])
-        # print(f"Can take CS 175 with CS 171 completed, but not 178: {result3}")  # Should be False
+        pprint(courses)
     
     asyncio.run(test())

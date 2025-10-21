@@ -112,7 +112,7 @@ def parse_still_needed_lines(text):
             i += 1
     return still_needed
 
-def parse_degreeworks(filepath):
+def extract_courses_needed(filepath):
     with open('../data/courses.json', 'r') as f:
         course_data = json.load(f)
 
@@ -121,6 +121,49 @@ def parse_degreeworks(filepath):
     codes_final = clean_lines(still_needed_lines, course_data)
     return codes_final
 
+# Takes in degreeworks pdf, returns list of course objects of courses user has completed
+def extract_courses_completed(filepath):
+    text = extract_degreeworks_text(filepath)
+    completed = []
+
+    # Detect completed courses if line has grade + term
+    grade_pattern = r'\b([A-D][+-]?|F|IP|T)\b'# Regex for grade
+    term_pattern = r'(FALL|WINTER|SPRING|SS)'
+
+    lines = text.split('\n')
+    for line in lines:
+        has_grade = re.search(grade_pattern, line)
+        has_term = re.search(term_pattern, line)
+        
+        if has_grade and has_term:
+            # If line starts with (T) its transfer course that doesnt satisfy uci requirement - skip
+            if line.strip().startswith('(T)'):
+                continue
+            
+            # Find course codes in the line
+            course_pattern = r'([A-Za-z&]+)\s+(\d+[A-Za-z]?)'
+            matches = re.findall(course_pattern, line)
+            
+            for match in matches:
+                dept = match[0].upper().replace(' ', '')
+                num = match[1].upper().replace(' ', '')
+                
+                code_with_space = f"{match[0]} {match[1]}"
+                # If (T) later in line, skip course, add uci equiv
+                if f"(T){code_with_space}" in line:
+                    continue
+                
+                # validate + add
+                if dept.replace('&', '').isalpha() and num[0].isdigit() and len(dept) > 1:
+                    code = dept + num
+                    if code not in completed:
+                        completed.append(code)
+
+    # pprint(completed)
+    return completed
+
+
 if __name__ == "__main__":
-    codes = parse_degreeworks("/Users/zacharylai/Desktop/zach_degreeworks.pdf")
-    pprint(codes)
+    # codes = extract_courses_needed("/Users/zacharylai/Desktop/zach_degreeworks.pdf")
+    extract_courses_completed("/Users/zacharylai/Desktop/zach_degreeworks.pdf")
+    # pprint(codes)

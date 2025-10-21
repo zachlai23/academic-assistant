@@ -10,11 +10,11 @@ from pathlib import Path
 # Add parent directory to path
 sys.path.append(str(Path(__file__).parent.parent))
 
-from utils.parse_degreeworks import parse_degreeworks
+from utils.parse_degreeworks import extract_courses_needed, extract_courses_completed
 
 # Returns list of courses that user can take based on prereqs + is required for graduation
 async def rec_degreeworks_courses(completed_courses=None, major="Computer Science"):
-    courses_grad_reqs = parse_degreeworks("/Users/zacharylai/Desktop/zach_degreeworks.pdf")
+    courses_grad_reqs = extract_courses_needed("/Users/zacharylai/Desktop/zach_degreeworks.pdf")
     course_recs = []
 
     # Loop through course requirements
@@ -52,16 +52,9 @@ if __name__ == "__main__":
         with open('../data/courses.json', 'r') as f:
             data = json.load(f)
 
-        courses = await rec_degreeworks_courses(["I&CSCI6D",
-                "MATH3A",
-                "I&CSCI6N",
-                "MATH2B",
-                "I&CSCI46",
-                "CSE46",
-                "COMPSCI112",
-                "COMPSCI116",
-                "COMPSCI171",
-                "COMPSCI178"])
+        courses_completed =extract_courses_completed("/Users/zacharylai/Desktop/zach_degreeworks.pdf")
+
+        courses = await rec_degreeworks_courses(courses_completed)
 
         pprint(courses)
     

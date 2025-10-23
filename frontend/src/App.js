@@ -5,7 +5,6 @@ import axios from 'axios';
 function App() {
   const [messages, setMessages] = useState([]);
   const [currInput, setCurrInput] = useState("");
-  const [convID, setConvID] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [degreeworksData, setDegreeWorksData] = useState(null);
   const [selectedFile, setSelectedFile] = useState(null)
@@ -35,7 +34,10 @@ function App() {
       // Send user input to backend
       const response = await client.post('/chat', {
         message: userMessage, 
-        conversation_id: "1"
+        user_id: "1",
+        conversation_id: "1", 
+        completed_courses: degreeworksData?.completed_courses || [],
+        required: degreeworksData?.requirements || {}
       });
 
       setIsLoading(false);
@@ -82,7 +84,7 @@ function App() {
 
       if (data) {
         setDegreeWorksData(data);
-        alert(`Success! Found ${data.completed_courses.length} completed courses`);
+        alert(`Success! Found ${data.requirements["1"][0]["code"]} completed courses`);
       } else {
         alert('Error: ' + data.error);
       }

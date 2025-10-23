@@ -61,7 +61,7 @@ def clean_lines(lines, data):
         num_needed = int(num_courses.group(1)) if num_courses else 0
 
         if num_needed != 0:
-            courses_map[num_needed]= []
+            # courses_map[num_needed]= []
 
             # Extract rest of string after 'in' - department + numbers
             department = re.search(r'\s+in\s+(.+)$', line)
@@ -72,7 +72,7 @@ def clean_lines(lines, data):
             line = department.group(1)
 
             course_list = course_codes(line, data)
-            courses_map[num_needed].append(course_list)
+            courses_map[num_needed] = course_list
 
     return courses_map
 

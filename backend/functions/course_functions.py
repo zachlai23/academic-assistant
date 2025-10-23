@@ -13,16 +13,16 @@ sys.path.append(str(Path(__file__).parent.parent))
 from utils.parse_degreeworks import extract_courses_needed, extract_courses_completed
 
 # Returns list of courses that user can take based on prereqs + is required for graduation
-async def rec_degreeworks_courses(completed_courses=None, major="Computer Science"):
-    courses_grad_reqs = extract_courses_needed("/Users/zacharylai/Desktop/zach_degreeworks.pdf")
+async def rec_degreeworks_courses(completed_courses=None, grad_reqs=None, major="Computer Science"):
+    # courses_grad_reqs = extract_courses_needed("/Users/zacharylai/Desktop/zach_degreeworks.pdf")
     course_recs = []
 
     # Loop through course requirements
-    for requiredCt, courses in courses_grad_reqs.items():
-        for course_list in courses:
-            for course in course_list:
-                if check_prereq(course, completed_courses):
-                    course_recs.append([course['code'], course['name'], course['description']])
+    for requiredCt, courses in grad_reqs.items():
+        # for course_list in courses:
+        for course in courses:
+            if check_prereq(course, completed_courses):
+                course_recs.append([course['code'], course['name'], course['description']])
 
     return course_recs
 

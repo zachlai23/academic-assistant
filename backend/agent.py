@@ -5,17 +5,18 @@ import json
 from dotenv import load_dotenv
 import asyncio
 from functions.course_functions import rec_degreeworks_courses
+from typing import List, Dict
 
 # Store conversations between sessions
 conversations = {}
 
-async def agent(user_message: str, conversation_id: str):
+async def agent(user_message: str, conversation_id: str, completed_courses: List[str], grad_reqs: Dict):
     # Move to separate file eventually
     rec_courses = {
         "type": "function",
         "function": {
-            "name": "recommend_courses",
-            "description": "Recommends courses based on the classes the user has already taken.",
+            "name": "rec_degreeworks_courses",
+            "description": "Recommends courses based on the classes the user has already taken and classes needed for graduation.",
             "parameters": {
                 "type": "object",
                 "properties": {
@@ -24,13 +25,13 @@ async def agent(user_message: str, conversation_id: str):
                         "items": {"type": "string"},
                         "description": "List of course codes the student completed.(format: COMPSCI171 with no spaces)"
                     },
+                    "grad_reqs": {
+                        "type": "object",
+                        "description": "Keys are number of courses needed from the value list to satisfy the degree.  Values are lists of course objects."
+                    },
                     "major": {
                         "type": "string",
                         "description": "Student's major"
-                    },
-                    "num_recommendations": {
-                        "type": "integer",
-                        "description": "number of courses recommendations to return."
                     }
                 }
             },
@@ -49,6 +50,13 @@ async def agent(user_message: str, conversation_id: str):
     else:
         messages = []
 
+    system_message = """You are an academic advisor helping students plan their courses.
+
+    The student has uploaded their DegreeWorks with their completed courses and graduation requirements.
+    When they ask for course recommendations, use the rec_degreeworks_courses function.
+    """
+
+    messages.append({"role": "system", "content": system_message})
     messages.append({"role": "user", "content": user_message})
 
     response = await client.chat.completions.create(
@@ -62,7 +70,7 @@ async def agent(user_message: str, conversation_id: str):
         tool_call = response.choices[0].message.tool_calls[0]
         function_args = tool_call.function.arguments 
         data = json.loads(function_args)
-        result = await recommend_courses(**data)
+        result = await rec_degreeworks_courses(completed_courses=completed_courses, grad_reqs=grad_reqs, major="Computer Science")
 
         messages.append({
             "role": "assistant", 

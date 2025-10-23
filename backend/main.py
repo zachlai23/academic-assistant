@@ -1,5 +1,5 @@
 from fastapi import FastAPI, HTTPException, UploadFile
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from fastapi.middleware.cors import CORSMiddleware
 from utils.parse_degreeworks import extract_courses_needed, extract_courses_completed
 import os
@@ -20,6 +20,8 @@ class ChatMessage(BaseModel):
     message: str
     user_id: str = "default_user"
     conversation_id: str = "default"
+    completed_courses: list[str]
+    required: dict = Field(default_factory=dict)
 
 @app.get("/health")
 def health_check():
@@ -54,8 +56,10 @@ async def upload_file(file: UploadFile):
 async def chat_endpoint(chat_message: ChatMessage):
     # Get user message
     message = chat_message.message
+    completed_courses = chat_message.completed_courses
+    grad_reqs = chat_message.required
     # Call agent
-    agent_response = await agent(message, chat_message.conversation_id)
+    agent_response = await agent(message, chat_message.conversation_id, completed_courses, grad_reqs)
     # Return response
     return {"response": agent_response}
    

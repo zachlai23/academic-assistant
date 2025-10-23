@@ -16,3 +16,5 @@ frontend/build/
 
 # Logs
 *.log
+
+uploads/

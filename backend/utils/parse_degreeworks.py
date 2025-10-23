@@ -113,7 +113,7 @@ def parse_still_needed_lines(text):
     return still_needed
 
 def extract_courses_needed(filepath):
-    with open('../data/courses.json', 'r') as f:
+    with open('data/courses.json', 'r') as f:
         course_data = json.load(f)
 
     text = extract_degreeworks_text(filepath)

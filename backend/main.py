@@ -1,6 +1,7 @@
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, UploadFile
 from pydantic import BaseModel
 from fastapi.middleware.cors import CORSMiddleware
+from utils.parse_degreeworks import extract_courses_needed, extract_courses_completed
 import os
 from dotenv import load_dotenv
 from agent import agent
@@ -23,6 +24,31 @@ class ChatMessage(BaseModel):
 @app.get("/health")
 def health_check():
     return {"status": "healthy", "openai_configured": bool(os.getenv("OPENAI_API_KEY"))}
+
+@app.post("/uploadFile/")
+async def upload_file(file: UploadFile):
+    try:
+        upload_dir = "uploads"
+        file_path = f"./{upload_dir}/{file.filename}"
+
+        os.makedirs(upload_dir, exist_ok=True)
+
+        with open(file_path, 'wb') as buffer:
+            buffer.write(await file.read())
+
+        completed_courses = extract_courses_completed(str(file_path))
+        courses_required = extract_courses_needed(str(file_path))
+
+        os.remove(file_path) 
+
+    except Exception as e:
+        return {"success": False, "error": str(e)}
+
+    return {
+        "success": True,
+        "completed_courses": completed_courses,
+        "requirements": courses_required
+    }
 
 @app.post("/chat")
 async def chat_endpoint(chat_message: ChatMessage):

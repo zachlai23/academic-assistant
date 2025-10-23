@@ -52,7 +52,9 @@ if __name__ == "__main__":
         with open('../data/courses.json', 'r') as f:
             data = json.load(f)
 
-        courses_completed =extract_courses_completed("/Users/zacharylai/Desktop/zach_degreeworks.pdf")
+        courses_completed = extract_courses_completed("/Users/zacharylai/Desktop/zach_degreeworks.pdf")
+
+        pprint(courses_completed)
 
         courses = await rec_degreeworks_courses(courses_completed)
 

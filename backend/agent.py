@@ -4,7 +4,7 @@ import os
 import json
 from dotenv import load_dotenv
 import asyncio
-from functions.course_functions import recommend_courses
+from functions.course_functions import rec_degreeworks_courses
 
 # Store conversations between sessions
 conversations = {}

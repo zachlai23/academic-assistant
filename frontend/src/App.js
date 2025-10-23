@@ -7,6 +7,8 @@ function App() {
   const [currInput, setCurrInput] = useState("");
   const [convID, setConvID] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [degreeworksData, setDegreeWorksData] = useState(null);
+  const [selectedFile, setSelectedFile] = useState(null)
   const messagesEndRef = useRef(null);
 
   const client = axios.create({ 
@@ -59,9 +61,49 @@ function App() {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
+  const onFileChange = (event) => {
+    setSelectedFile(event.target.files[0]);
+  };
+
+  const onFileUpload = async () => {
+    if (!selectedFile) return;
+
+    const formData = new FormData();
+    formData.append('file', selectedFile);
+
+    try {
+      // Send form to backend
+      const response = await fetch('http://localhost:8000/uploadFile/', {
+        method: 'POST',
+        body: formData,
+      });
+
+      const data = await response.json();
+
+      if (data) {
+        setDegreeWorksData(data);
+        alert(`Success! Found ${data.completed_courses.length} completed courses`);
+      } else {
+        alert('Error: ' + data.error);
+      }
+    } catch (error) {
+      console.error('Upload failed:', error);
+      alert('Upload failed');
+    }
+
+  };
+
   return (
     <div className="App">
       <h1>Academic Assistant</h1>
+
+      <div className="uploadFile">
+        <h3>Upload degreeworks pdf</h3>
+        <input type="file" accept=".pdf" onChange={onFileChange} />
+        <button onClick={onFileUpload}>Upload!</button>
+        { degreeworksData && <div>File received!</div>}
+      </div>
+
       <div className="chatBox">
         <ul className="showMessages">
           {messages.map((message, index) => (

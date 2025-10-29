@@ -84,8 +84,6 @@ function App() {
 
       if (data) {
         setDegreeWorksData(data);
-      } else {
-        console.log("No degreeworks data.");
       }
     } catch (error) {
       console.error('Upload failed:', error);

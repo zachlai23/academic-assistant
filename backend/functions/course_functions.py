@@ -65,7 +65,7 @@ if __name__ == "__main__":
     
     async def test():
         course_info_returned = await course_info(116, "COMPSCI")
-        print(course_info_returned)
+        # print(course_info_returned)
         # with open('../data/courses.json', 'r') as f:
         #     data = json.load(f)
 

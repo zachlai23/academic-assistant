@@ -48,7 +48,6 @@ async def agent(user_message: str, conversation_id: str, completed_courses: List
     )
 
     if response.choices[0].message.tool_calls:
-        print(response.choices[0].message.tool_calls[0])
         tool_call = response.choices[0].message.tool_calls[0]
         tool_name = tool_call.function.name
         function_args = tool_call.function.arguments 
@@ -60,8 +59,6 @@ async def agent(user_message: str, conversation_id: str, completed_courses: List
             result = await course_info(**data)
         else:
             result = {"error": f"unknown function {tool_name}"}
-
-        print(result)
 
         messages.append({
             "role": "assistant", 

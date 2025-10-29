@@ -167,4 +167,4 @@ if __name__ == "__main__":
     codes = extract_courses_needed("/Users/zacharylai/Desktop/zach_degreeworks.pdf")
     # completed = extract_courses_completed("/Users/zacharylai/Desktop/zach_degreeworks.pdf")
     # pprint(completed)
-    pprint(codes)
+    # pprint(codes)

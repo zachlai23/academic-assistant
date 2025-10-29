@@ -1,5 +1,6 @@
 import requests
 import json
+from collections import defaultdict
 
 base_url = "https://anteaterapi.com/v2/rest/"
 
@@ -30,18 +31,20 @@ def transform_course(api_course):
 
 
 if __name__ == "__main__":
-    departments = ["COMPSCI", "I%26C%20SCI", "IN4MATX"]  # Add your departments here
+    # Populate courses.json
+    departments = ["COMPSCI", "I%26C%20SCI", "IN4MATX"] #Expand to other majors
+    department_actual_names = ["COMPSCI", "I&CSCI", "IN4MATX"]
 
-    all_courses = []
+    all_courses = defaultdict(list)
 
-    for department in departments:
+    for i, department in enumerate(departments):
         print(f"Fetching courses for {department}...")
         dep_data = get_department_courses(department)
 
         if dep_data:
             for course in dep_data["data"]:
                 transformed = transform_course(course)
-                all_courses.append(transformed)
+                all_courses[department_actual_names[i]].append(transformed)
             print(f"Added {len(dep_data['data'])} courses from {department}")
         else:
             print(f"Failed to fetch data for {department}")

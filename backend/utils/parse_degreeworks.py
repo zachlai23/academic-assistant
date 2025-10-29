@@ -32,7 +32,7 @@ def course_codes(line, data):
 
                 # Loop through all courses and keep numbers if an actual course matches
                 # More efficient way? Will have lots more courses when expand to all majors
-                for course in data["courses"]:
+                for course in data["courses"][department]:
                     if department in course['code']:
                         match = re.search(r'(\d+)([A-Za-z]*)', course['code'])
                         numeric = int(match.group(1))
@@ -44,7 +44,7 @@ def course_codes(line, data):
                 s = s.replace('@', 'A')
                 dep_and_code = department + s
                 # Find matching course object
-                for course in data["courses"]:
+                for course in data["courses"][department]:
                     if course['code'] == dep_and_code:
                         all_courses.append(course)
                         break
@@ -164,6 +164,7 @@ def extract_courses_completed(filepath):
 
 
 if __name__ == "__main__":
-    # codes = extract_courses_needed("/Users/zacharylai/Desktop/zach_degreeworks.pdf")
-    extract_courses_completed("/Users/zacharylai/Desktop/zach_degreeworks.pdf")
-    # pprint(codes)
+    codes = extract_courses_needed("/Users/zacharylai/Desktop/zach_degreeworks.pdf")
+    # completed = extract_courses_completed("/Users/zacharylai/Desktop/zach_degreeworks.pdf")
+    # pprint(completed)
+    pprint(codes)

@@ -12,19 +12,34 @@ sys.path.append(str(Path(__file__).parent.parent))
 
 from utils.parse_degreeworks import extract_courses_needed, extract_courses_completed
 
+CURRENT_YEAR=2025
+
 # Returns list of courses that user can take based on prereqs + is required for graduation
 async def rec_degreeworks_courses(completed_courses=None, grad_reqs=None, major="Computer Science"):
     # courses_grad_reqs = extract_courses_needed("/Users/zacharylai/Desktop/zach_degreeworks.pdf")
     course_recs = []
-
     # Loop through course requirements
     for requiredCt, courses in grad_reqs.items():
-        # for course_list in courses:
         for course in courses:
             if check_prereq(course, completed_courses):
                 course_recs.append([course['code'], course['name'], course['description']])
-
     return course_recs
+
+# Return the name, code, credits, description, prerequisites, and offerings this year for a course in input
+async def course_info(course_number, department):
+    with open('data/courses.json', 'r') as f:
+        data = json.load(f)
+    # Loop through courses in department and find matching course, return info
+    for course in data["courses"][department]:
+        if course["code"] == f"{department}{course_number}":
+            relevant_offerings = [
+                quarter for quarter in course["offered_quarters"] 
+                if int(quarter.split()[0]) >= CURRENT_YEAR
+            ]
+            return [course["name"], course["code"], course["credits"], course["description"], course["prerequisites"], relevant_offerings]
+
+
+# HELPER FUNCTIONS
 
 # Checks if user can take given course based on prereqs
 # Input is course object
@@ -49,15 +64,17 @@ if __name__ == "__main__":
     import asyncio
     
     async def test():
-        with open('../data/courses.json', 'r') as f:
-            data = json.load(f)
+        course_info_returned = await course_info(116, "COMPSCI")
+        print(course_info_returned)
+        # with open('../data/courses.json', 'r') as f:
+        #     data = json.load(f)
 
-        courses_completed = extract_courses_completed("/Users/zacharylai/Desktop/zach_degreeworks.pdf")
+        # courses_completed = extract_courses_completed("/Users/zacharylai/Desktop/zach_degreeworks.pdf")
 
-        pprint(courses_completed)
+        # pprint(courses_completed)
 
-        courses = await rec_degreeworks_courses(courses_completed)
+        # courses = await rec_degreeworks_courses(courses_completed)
 
-        pprint(courses)
+        # pprint(courses)
     
     asyncio.run(test())

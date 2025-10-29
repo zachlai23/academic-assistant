@@ -84,9 +84,8 @@ function App() {
 
       if (data) {
         setDegreeWorksData(data);
-        alert(`Success! Found ${data.requirements["1"][0]["code"]} completed courses`);
       } else {
-        alert('Error: ' + data.error);
+        console.log("No degreeworks data.");
       }
     } catch (error) {
       console.error('Upload failed:', error);

@@ -119,6 +119,7 @@ def extract_courses_needed(filepath):
     text = extract_degreeworks_text(filepath)
     still_needed_lines = parse_still_needed_lines(text)
     codes_final = clean_lines(still_needed_lines, course_data)
+    
     return codes_final
 
 # Takes in degreeworks pdf, returns list of course objects of courses user has completed

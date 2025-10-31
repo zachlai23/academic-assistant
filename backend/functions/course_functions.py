@@ -13,10 +13,10 @@ sys.path.append(str(Path(__file__).parent.parent))
 from utils.parse_degreeworks import extract_courses_needed, extract_courses_completed
 
 CURRENT_YEAR=2025
+NEXT_QUARTER = '2025 Winter'
 
 # Returns list of courses that user can take based on prereqs + is required for graduation
-async def rec_degreeworks_courses(completed_courses=None, grad_reqs=None, major="Computer Science"):
-    # courses_grad_reqs = extract_courses_needed("/Users/zacharylai/Desktop/zach_degreeworks.pdf")
+async def rec_degreeworks_courses(completed_courses=None, grad_reqs=None):
     course_recs = []
     # Loop through course requirements
     for requiredCt, courses in grad_reqs.items():
@@ -38,6 +38,19 @@ async def course_info(course_number, department):
             ]
             return [course["name"], course["code"], course["credits"], course["description"], course["prerequisites"], relevant_offerings]
 
+# Return with suggested classes to take next quarter, based on degreeworks
+async def plan_quarter(completed_courses=None, grad_reqs=None, preferred_num_courses=3):
+    possible_courses = []
+    seen_codes = set()
+    # 1. Get courses that fulfill requirements
+    for requiredCt, courses in grad_reqs.items():
+        for course in courses:
+            if check_prereq(course, completed_courses) and NEXT_QUARTER in course["offered_quarters"] and course["code"] not in seen_codes:
+                possible_courses.append(course)
+                seen_codes.add(course["code"])
+
+    quarter_courses = possible_courses[:preferred_num_courses]
+    return quarter_courses
 
 # HELPER FUNCTIONS
 
@@ -69,9 +82,13 @@ if __name__ == "__main__":
         # with open('../data/courses.json', 'r') as f:
         #     data = json.load(f)
 
-        # courses_completed = extract_courses_completed("/Users/zacharylai/Desktop/zach_degreeworks.pdf")
+        courses_completed = extract_courses_completed("/Users/zacharylai/Desktop/zach_degreeworks.pdf")
+        courses_needed = extract_courses_needed("/Users/zacharylai/Desktop/zach_degreeworks.pdf")
 
-        # pprint(courses_completed)
+        qplan = await plan_quarter(courses_completed, courses_needed)
+        for q in qplan:
+            print(q["code"])
+
 
         # courses = await rec_degreeworks_courses(courses_completed)
 

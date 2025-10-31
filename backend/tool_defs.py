@@ -14,10 +14,6 @@ rec_courses = {
                     "grad_reqs": {
                         "type": "object",
                         "description": "Keys are number of courses needed from the value list to satisfy the degree.  Values are lists of course objects."
-                    },
-                    "major": {
-                        "type": "string",
-                        "description": "Student's major"
                     }
                 }
             },
@@ -47,4 +43,32 @@ get_course_info = {
         }
     }
 
-TOOLS = [rec_courses, get_course_info]
+plan_quarter = {
+        "type": "function",
+        "function": {
+            "name": "plan_quarter",
+            "description": "Give a quarter plan based on completed courses, courses needed for graduation, and users preferred number of courses to take.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "completed_courses": {
+                        "type": "array",
+                        "items": {"type": "string"},
+                        "description": "List of course codes the student completed.(format: COMPSCI171 with no spaces)"
+                    },
+                    "grad_reqs": {
+                        "type": "object",
+                        "description": "Keys are number of courses needed from the value list to satisfy the degree.  Values are lists of course objects."
+                    },
+                    "preferred_num_courses": {
+                        "type": "integer", 
+                        "description": "Preferred number of courses user wants to take next quarter.",
+                        "default": 3
+                    }
+                }
+            },
+            "required": []
+        }
+    }
+
+TOOLS = [rec_courses, get_course_info, plan_quarter]

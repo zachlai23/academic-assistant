@@ -112,6 +112,7 @@ def parse_still_needed_lines(text):
             i += 1
     return still_needed
 
+# Takes in degreeworks pdf, returns list of course objects user's courses still needed for graduation
 def extract_courses_needed(filepath):
     with open('data/courses.json', 'r') as f:
         course_data = json.load(f)
@@ -121,7 +122,7 @@ def extract_courses_needed(filepath):
     codes_final = clean_lines(still_needed_lines, course_data)
     return codes_final
 
-# Takes in degreeworks pdf, returns list of course objects of courses user has completed
+# Takes in degreeworks pdf, returns list of course codes user's completed courses
 def extract_courses_completed(filepath):
     text = extract_degreeworks_text(filepath)
     completed = []
@@ -159,7 +160,6 @@ def extract_courses_completed(filepath):
                     if code not in completed:
                         completed.append(code)
 
-    # pprint(completed)
     return completed
 
 

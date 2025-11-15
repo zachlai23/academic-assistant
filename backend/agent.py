@@ -4,7 +4,7 @@ import os
 import json
 from dotenv import load_dotenv
 import asyncio
-from functions.course_functions import rec_degreeworks_courses, course_info
+from functions.course_functions import rec_degreeworks_courses, course_info, plan_next_quarter
 from typing import List, Dict
 from tool_defs import TOOLS
 
@@ -57,6 +57,12 @@ async def agent(user_message: str, conversation_id: str, completed_courses: List
             result = await rec_degreeworks_courses(completed_courses=completed_courses, grad_reqs=grad_reqs, major="Computer Science")
         elif tool_name == "course_info":
             result = await course_info(**data)
+        elif tool_name == "plan_next_quarter":
+            result = await plan_next_quarter(
+                completed_courses=completed_courses,
+                grad_reqs=grad_reqs,
+                preferred_num_courses=data.get("preferred_num_courses", 4)
+            )
         else:
             result = {"error": f"unknown function {tool_name}"}
 

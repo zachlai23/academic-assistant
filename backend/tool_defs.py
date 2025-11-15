@@ -47,4 +47,30 @@ get_course_info = {
         }
     }
 
-TOOLS = [rec_courses, get_course_info]
+
+next_quarter_plan = {
+    "type": "function",
+    "function": {
+        "name": "plan_next_quarter",
+        "description": """Get all courses student can take next quarter (prerequisites met, offered next quarter). 
+        
+        Returns:
+        - available_courses: Flat list of all valid courses with details
+        - courses_by_requirement: Courses grouped by requirement (key = number needed for graduation from that group)
+        
+        Select the best combination based on: student interest, required courses first, student preferred units or 12-18 units total.""",
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "preferred_num_courses": {
+                    "type": "integer",
+                    "description": "Number of courses to select",
+                    "default": 4
+                }
+            },
+            "required": []
+        }
+    }
+} 
+
+TOOLS = [rec_courses, get_course_info, next_quarter_plan]

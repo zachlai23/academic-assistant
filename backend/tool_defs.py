@@ -47,6 +47,26 @@ get_course_info = {
         }
     }
 
+remaining_requirements = {
+    "type": "function",
+    "function": {
+        "name": "get_remaining_requirements",
+        "description": """Get remaining graduation requirements breakdown.
+        
+        Returns requirements_breakdown showing:
+        - For each requirement category, how many courses are needed
+        - How many courses are available to choose from in that category
+        - Sample courses from each category
+        
+        Note: Some courses may satisfy multiple categories. Actual total courses needed depends on strategic course selection during planning.""",
+        "parameters": {
+            "type": "object",
+            "properties": {},
+            "required": []
+        }
+    }
+}
+
 
 next_quarter_plan = {
     "type": "function",
@@ -73,4 +93,4 @@ next_quarter_plan = {
     }
 } 
 
-TOOLS = [rec_courses, get_course_info, next_quarter_plan]
+TOOLS = [rec_courses, get_course_info, next_quarter_plan, remaining_requirements]

@@ -4,7 +4,7 @@ import os
 import json
 from dotenv import load_dotenv
 import asyncio
-from functions.course_functions import rec_degreeworks_courses, course_info, plan_next_quarter
+from functions.course_functions import rec_degreeworks_courses, course_info, plan_next_quarter, get_remaining_requirements
 from typing import List, Dict
 from tool_defs import TOOLS
 
@@ -14,7 +14,6 @@ conversations = {}
 async def agent(user_message: str, conversation_id: str, completed_courses: List[str], grad_reqs: Dict):
     load_dotenv()
     openai_api_key = os.getenv("OPENAI_API_KEY")
-    anthropic_api_key = os.getenv("CLAUDEAI_API_KEY") # Move over to Anthropic API
 
     client = openai.AsyncOpenAI(api_key=openai_api_key)
 
@@ -26,9 +25,22 @@ async def agent(user_message: str, conversation_id: str, completed_courses: List
     system_message = """You are an academic advisor helping students plan their courses.
 
     The student has uploaded their DegreeWorks with their completed courses and graduation requirements.
-    When they ask for course recommendations, use the rec_degreeworks_courses function.
 
-    When users mention courses, normalize department names, some examples are:
+    **Available tools:**
+    - get_remaining_requirements: Check what requirements remain to graduate (shows breakdown by category)
+    - plan_next_quarter: Get all valid courses for a specific quarter (call multiple times for graduation planning)
+    - course_info: Get detailed information about a specific course
+    - rec_degreeworks_courses: Get general course recommendations
+
+    **For single quarter planning:**
+    When asked to plan one quarter:
+    1. Ask the user: "How many courses would you like to take next quarter?" (typical range: 3-5 courses)
+    2. Call plan_next_quarter with their preferred number
+    3. Select the best courses from available options based on: required courses first, balanced difficulty, and student preferences
+    4. Present the plan with course codes, names, total units, and brief reasoning
+
+    **Department name normalization:**
+    When users mention courses, normalize department names:
     - "cs", "comp sci", "compsci" → "COMPSCI"
     - "ics" → "I&CSCI"
     - "informatics", "inf" → "IN4MATX"
@@ -41,7 +53,7 @@ async def agent(user_message: str, conversation_id: str, completed_courses: List
     messages.append({"role": "user", "content": user_message})
 
     response = await client.chat.completions.create(
-        model= "gpt-3.5-turbo",
+        model= "gpt-4o-mini",
         messages= messages,
         tools=TOOLS,
         tool_choice="auto"
@@ -62,6 +74,11 @@ async def agent(user_message: str, conversation_id: str, completed_courses: List
                 completed_courses=completed_courses,
                 grad_reqs=grad_reqs,
                 preferred_num_courses=data.get("preferred_num_courses", 4)
+            )
+        elif tool_name == "get_remaining_requirements":
+            result = await get_remaining_requirements(
+                completed_courses=completed_courses,
+                grad_reqs=grad_reqs
             )
         else:
             result = {"error": f"unknown function {tool_name}"}

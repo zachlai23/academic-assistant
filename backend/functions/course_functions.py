@@ -50,6 +50,7 @@ async def plan_next_quarter(completed_courses=None, grad_reqs=None, preferred_nu
 
     for numRequired, courses in grad_reqs.items():
         for course in courses:
+            print(check_prereq(course, completed_courses), course['code'])
             if course['code'] not in seen_codes and check_prereq(course, completed_courses) and NEXT_QUARTER in course['offered_quarters']:
                 possible_courses_ct += 1
 
@@ -76,31 +77,71 @@ async def plan_next_quarter(completed_courses=None, grad_reqs=None, preferred_nu
         "message": f"Found {len(all_possible_courses)} valid courses for next quarter. Select {preferred_num_courses} courses (aim for 12-18 total units)."
     }
 
-# HELPER FUNCTIONS
-
 # Return the remaining requirements a user needs to graduate
-# Number of quarters according to preferred classes per quarter
-# Total number of courses needed
-async def get_remaining_requirements(completed_courses=None, grad_reqs=None, preferred_classes_per_quarter=4):
-    totalCourses = 0
-    for requiredCt, courses in grad_reqs.items():
-        totalCourses += requiredCt
-        pprint(requiredCt, ": ", courses)
-    print("Courses needed for graduation: ", totalCourses)
+# Function used by assistant when planning a user's graduation
+async def get_remaining_requirements(completed_courses=None, grad_reqs=None):
+    requirements_breakdown = {}
+    
+    for num_required, courses in grad_reqs.items():
+        # Filter out completed courses
+        remaining_courses = [
+            course for course in courses 
+            if course["code"] not in completed_courses
+        ]
+
+        # For each section collect breakdown of requirements
+        requirements_breakdown[num_required] = {
+            "num_needed": int(num_required),
+            "num_available": len(remaining_courses),
+            "sample_courses": [c["code"] for c in remaining_courses[:5]]  # Show first 5 as examples
+        }
+    return {
+        "requirements_breakdown": requirements_breakdown,
+    }
+
+# HELPER FUNCTIONS
 
 # Checks if user can take given course based on prereqs
 # Input is course object
 def check_prereq(course, completed_courses=None):
     if completed_courses is None:
         completed_courses = []
-    return all(prereq in completed_courses for prereq in course['prerequisites'])
+
+    if not course["prerequisites"]:
+        return True
+
+    return check_prereq_tree(course["prereq_tree"], completed_courses)
+
+# Recursive function to check if compelted courses satisfies prereq tree for a course
+def check_prereq_tree(prereq_tree, completed_courses=None):
+    if not prereq_tree:
+        return True
+    # Base case - if course taken return true, not handling exams for now
+    if prereq_tree.get("prereqType") == "course":
+        course_id = normalize_course_id(prereq_tree["courseId"])
+        return course_id in completed_courses
+    
+    # AND - return true if all children in tree(courses or ORs) satisfied
+    if prereq_tree.get("AND"):
+        return all(check_prereq_tree(child, completed_courses) for child in prereq_tree["AND"])
+
+    # OR - return true if any children in tree(courses or ORs) satisfied
+    if prereq_tree.get("OR"):
+        return any(check_prereq_tree(child, completed_courses) for child in prereq_tree["OR"])
+
+    # Exams return false, should be handled in project though
+    return False
+    
+
+# Normalize course id's to remove spaces to match course codes
+def normalize_course_id(course_id):
+    return course_id.replace(' ', '').upper()
 
 # Returns all courses user can take based on their completed courses
 async def possible_courses(course_data, completed_courses):
     courses_can_take = []
 
     for course in course_data['courses']:
-        
         if (len(course['prerequisites']) > 0 
             and course['code'] not in completed_courses 
             and all(prereq in completed_courses for prereq in course['prerequisites'])):
@@ -111,18 +152,7 @@ if __name__ == "__main__":
     import asyncio
     
     async def test():
-        # course_info_returned = await course_info(116, "COMPSCI")
-        # print(course_info_returned)
-        # with open('../data/courses.json', 'r') as f:
-        #     data = json.load(f)
-
         courses_completed = extract_courses_completed("/Users/zacharylai/Desktop/zach_degreeworks.pdf")
         courses_needed = extract_courses_needed("/Users/zacharylai/Desktop/zach_degreeworks.pdf")
-
-        next_quarter_plan = await plan_next_quarter(courses_completed, courses_needed, 3)
-        pprint(next_quarter_plan)
-        # courses = await rec_degreeworks_courses(courses_completed)
-
-        # pprint(courses)
     
     asyncio.run(test())

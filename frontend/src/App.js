@@ -1,6 +1,7 @@
 import './App.css';
 import { useState, useRef, useEffect } from 'react';
 import axios from 'axios';
+import ReactMarkdown from 'react-markdown';
 
 function App() {
   const [messages, setMessages] = useState([]);
@@ -106,7 +107,13 @@ function App() {
       <div className="chatBox">
         <ul className="showMessages">
           {messages.map((message, index) => (
-            <li key={index} className={message.role}>{message.content}</li>
+            <li key={index} className={message.role}>
+              <div className="markdown-content">
+                <ReactMarkdown>
+                  {message.content}
+                </ReactMarkdown>
+              </div>
+            </li>
           ))}
           <div ref={messagesEndRef} />
         </ul>

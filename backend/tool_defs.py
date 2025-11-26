@@ -43,32 +43,50 @@ get_course_info = {
         }
     }
 
-plan_quarter = {
-        "type": "function",
-        "function": {
-            "name": "plan_quarter",
-            "description": "Give a quarter plan based on completed courses, courses needed for graduation, and users preferred number of courses to take.",
-            "parameters": {
-                "type": "object",
-                "properties": {
-                    "completed_courses": {
-                        "type": "array",
-                        "items": {"type": "string"},
-                        "description": "List of course codes the student completed.(format: COMPSCI171 with no spaces)"
-                    },
-                    "grad_reqs": {
-                        "type": "object",
-                        "description": "Keys are number of courses needed from the value list to satisfy the degree.  Values are lists of course objects."
-                    },
-                    "preferred_num_courses": {
-                        "type": "integer", 
-                        "description": "Preferred number of courses user wants to take next quarter.",
-                        "default": 3
-                    }
+remaining_requirements = {
+    "type": "function",
+    "function": {
+        "name": "get_remaining_requirements",
+        "description": """Get remaining graduation requirements breakdown.
+        
+        Returns requirements_breakdown showing:
+        - For each requirement category, how many courses are needed
+        - How many courses are available to choose from in that category
+        - Sample courses from each category
+        
+        Note: Some courses may satisfy multiple categories. Actual total courses needed depends on strategic course selection during planning.""",
+        "parameters": {
+            "type": "object",
+            "properties": {},
+            "required": []
+        }
+    }
+}
+
+
+next_quarter_plan = {
+    "type": "function",
+    "function": {
+        "name": "plan_next_quarter",
+        "description": """Get all courses student can take next quarter (prerequisites met, offered next quarter). 
+        
+        Returns:
+        - available_courses: Flat list of all valid courses with details
+        - courses_by_requirement: Courses grouped by requirement (key = number needed for graduation from that group)
+        
+        Select the best combination based on: student interest, required courses first, student preferred units or 12-18 units total.""",
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "preferred_num_courses": {
+                    "type": "integer",
+                    "description": "Number of courses to select",
+                    "default": 4
                 }
             },
             "required": []
         }
     }
+} 
 
-TOOLS = [rec_courses, get_course_info, plan_quarter]
+TOOLS = [rec_courses, get_course_info, next_quarter_plan, remaining_requirements]

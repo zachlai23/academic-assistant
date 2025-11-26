@@ -112,6 +112,7 @@ def parse_still_needed_lines(text):
             i += 1
     return still_needed
 
+# Takes in degreeworks pdf, returns list of course objects user's courses still needed for graduation
 def extract_courses_needed(filepath):
     with open('data/courses.json', 'r') as f:
         course_data = json.load(f)
@@ -122,7 +123,7 @@ def extract_courses_needed(filepath):
     
     return codes_final
 
-# Takes in degreeworks pdf, returns list of course objects of courses user has completed
+# Takes in degreeworks pdf, returns list of course codes user's completed courses
 def extract_courses_completed(filepath):
     text = extract_degreeworks_text(filepath)
     completed = []
@@ -142,12 +143,12 @@ def extract_courses_completed(filepath):
                 continue
             
             # Find course codes in the line
-            course_pattern = r'([A-Za-z&]+)\s+(\d+[A-Za-z]?)'
+            course_pattern = r'([A-Za-z&]+)\s+([H]?\d+[A-Za-z]?)(?:,\s*(\d+[A-Za-z]?))?'
             matches = re.findall(course_pattern, line)
             
             for match in matches:
                 dept = match[0].upper().replace(' ', '')
-                num = match[1].upper().replace(' ', '')
+                num1 = match[1].upper().replace(' ', '')
                 
                 code_with_space = f"{match[0]} {match[1]}"
                 # If (T) later in line, skip course, add uci equiv
@@ -155,17 +156,16 @@ def extract_courses_completed(filepath):
                     continue
                 
                 # validate + add
-                if dept.replace('&', '').isalpha() and num[0].isdigit() and len(dept) > 1:
-                    code = dept + num
+                if dept.replace('&', '').isalpha() and (num1[0].isdigit() or num1[0] == 'H') and len(dept) > 1:
+                    code = dept + num1
                     if code not in completed:
                         completed.append(code)
 
-    # pprint(completed)
+                # If there's a comma-separated second number, add that course too
+                if match[2]: 
+                    num2 = match[2].upper().replace(' ', '')
+                    code2 = dept + num2
+                    if code2 not in completed:
+                        completed.append(code2)
+
     return completed
-
-
-if __name__ == "__main__":
-    codes = extract_courses_needed("/Users/zacharylai/Desktop/zach_degreeworks.pdf")
-    # completed = extract_courses_completed("/Users/zacharylai/Desktop/zach_degreeworks.pdf")
-    # pprint(completed)
-    # pprint(codes)

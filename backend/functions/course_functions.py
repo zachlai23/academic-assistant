@@ -6,6 +6,7 @@ from pprint import pprint
 
 import sys
 from pathlib import Path
+from collections import defaultdict
 
 # Add parent directory to path
 sys.path.append(str(Path(__file__).parent.parent))
@@ -13,10 +14,10 @@ sys.path.append(str(Path(__file__).parent.parent))
 from utils.parse_degreeworks import extract_courses_needed, extract_courses_completed
 
 CURRENT_YEAR=2025
-NEXT_QUARTER = '2025 Winter'
+NEXT_QUARTER='2025 Winter'
 
 # Returns list of courses that user can take based on prereqs + is required for graduation
-async def rec_degreeworks_courses(completed_courses=None, grad_reqs=None):
+async def rec_degreeworks_courses(completed_courses=None, grad_reqs=None, major="Computer Science"):
     course_recs = []
     # Loop through course requirements
     for requiredCt, courses in grad_reqs.items():
@@ -25,7 +26,7 @@ async def rec_degreeworks_courses(completed_courses=None, grad_reqs=None):
                 course_recs.append([course['code'], course['name'], course['description']])
     return course_recs
 
-# Return the name, code, credits, description, prerequisites, and offerings this year for a course in input
+# Return the name, code, credits, description, prerequisites, difficulty, and offerings this year for a course in input
 async def course_info(course_number, department):
     with open('data/courses.json', 'r') as f:
         data = json.load(f)
@@ -36,21 +37,80 @@ async def course_info(course_number, department):
                 quarter for quarter in course["offered_quarters"] 
                 if int(quarter.split()[0]) >= CURRENT_YEAR
             ]
-            return [course["name"], course["code"], course["credits"], course["description"], course["prerequisites"], relevant_offerings]
+            return {
+                "name": course["name"],
+                "code": course["code"],
+                "credits": course["credits"],
+                "description": course["description"],
+                "prerequisites": course["prerequisites"],
+                "difficulty": course.get("difficulty", "unknown"),
+                "offered_quarters": relevant_offerings
+            }
+    return {
+        "error": f"Course {department}{course_number} not found"
+    }
 
-# Return with suggested classes to take next quarter, based on degreeworks
-async def plan_quarter(completed_courses=None, grad_reqs=None, preferred_num_courses=3):
-    possible_courses = []
-    seen_codes = set()
-    # 1. Get courses that fulfill requirements
-    for requiredCt, courses in grad_reqs.items():
+# Returns all courses user can take next quarter based on prereqs and offerings
+# let ai decide from those recs for smarter recommendations
+async def plan_next_quarter(completed_courses=None, grad_reqs=None, preferred_num_courses=3):
+    possible_courses = defaultdict(list) # number required : list of courses
+    possible_courses_ct = 0
+    seen_codes = set()  
+    all_possible_courses = []   # Flat list of courses user can take
+
+    for numRequired, courses in grad_reqs.items():
         for course in courses:
-            if check_prereq(course, completed_courses) and NEXT_QUARTER in course["offered_quarters"] and course["code"] not in seen_codes:
-                possible_courses.append(course)
-                seen_codes.add(course["code"])
+            if (course['code'] not in seen_codes and 
+                course['code'] not in completed_courses and 
+                check_prereq(course, completed_courses) and 
+                NEXT_QUARTER in course['offered_quarters']):
 
-    quarter_courses = possible_courses[:preferred_num_courses]
-    return quarter_courses
+                possible_courses_ct += 1
+
+                course_summary = {
+                    "code": course['code'],
+                    "name": course['name'],
+                    "credits": course['credits'],
+                    "description": course['description'],
+                    "difficulty": course['difficulty']
+                }
+                possible_courses[numRequired].append(course_summary)
+                all_possible_courses.append(course_summary)
+                seen_codes.add(course['code'])
+
+    if not possible_courses:
+        return {
+            "error": "No courses available for next quarter",
+            "available_courses": []
+        }
+    
+    return {
+        "available_courses": all_possible_courses,
+        "courses_by_requirement": dict(possible_courses),
+        "num_available": len(all_possible_courses),
+        "message": f"Found {len(all_possible_courses)} valid courses for next quarter. Select {preferred_num_courses} courses (aim for 12-18 total units)."
+    }
+
+# Return the remaining requirements a user needs to graduate
+async def get_remaining_requirements(completed_courses=None, grad_reqs=None):
+    requirements_breakdown = {}
+    
+    for num_required, courses in grad_reqs.items():
+        # Filter out completed courses
+        remaining_courses = [
+            course for course in courses 
+            if course["code"] not in completed_courses
+        ]
+
+        # For each section collect breakdown of requirements
+        requirements_breakdown[num_required] = {
+            "num_needed": int(num_required),
+            "num_available": len(remaining_courses),
+            "sample_courses": [c["code"] for c in remaining_courses[:5]]  # Show first 5 as examples
+        }
+    return {
+        "requirements_breakdown": requirements_breakdown,
+    }
 
 # HELPER FUNCTIONS
 
@@ -59,39 +119,32 @@ async def plan_quarter(completed_courses=None, grad_reqs=None, preferred_num_cou
 def check_prereq(course, completed_courses=None):
     if completed_courses is None:
         completed_courses = []
-    return all(prereq in completed_courses for prereq in course['prerequisites'])
 
-# Returns all courses user can take based on their completed courses
-async def possible_courses(course_data, completed_courses):
-    courses_can_take = []
+    if not course["prerequisites"]:
+        return True
 
-    for course in course_data['courses']:
-        
-        if (len(course['prerequisites']) > 0 
-            and course['code'] not in completed_courses 
-            and all(prereq in completed_courses for prereq in course['prerequisites'])):
-            courses_can_take.append(course)
-    return courses_can_take
+    return check_prereq_tree(course["prereq_tree"], completed_courses)
 
-if __name__ == "__main__":
-    import asyncio
+# Recursive function to check if compelted courses satisfies prereq tree for a course
+def check_prereq_tree(prereq_tree, completed_courses=None):
+    if not prereq_tree:
+        return True
+    # Base case - if course taken return true, not handling exams for now
+    if prereq_tree.get("prereqType") == "course":
+        course_id = normalize_course_id(prereq_tree["courseId"])
+        return course_id in completed_courses
     
-    async def test():
-        course_info_returned = await course_info(116, "COMPSCI")
-        # print(course_info_returned)
-        # with open('../data/courses.json', 'r') as f:
-        #     data = json.load(f)
+    # AND - return true if all children in tree(courses or ORs) satisfied
+    if prereq_tree.get("AND"):
+        return all(check_prereq_tree(child, completed_courses) for child in prereq_tree["AND"])
 
-        courses_completed = extract_courses_completed("/Users/zacharylai/Desktop/zach_degreeworks.pdf")
-        courses_needed = extract_courses_needed("/Users/zacharylai/Desktop/zach_degreeworks.pdf")
+    # OR - return true if any children in tree(courses or ORs) satisfied
+    if prereq_tree.get("OR"):
+        return any(check_prereq_tree(child, completed_courses) for child in prereq_tree["OR"])
 
-        qplan = await plan_quarter(courses_completed, courses_needed)
-        for q in qplan:
-            print(q["code"])
+    # Exams return false here, should be handled in project though
+    return False
 
-
-        # courses = await rec_degreeworks_courses(courses_completed)
-
-        # pprint(courses)
-    
-    asyncio.run(test())
+# Normalize course id's to remove spaces to match course codes
+def normalize_course_id(course_id):
+    return course_id.replace(' ', '').upper()

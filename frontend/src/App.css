@@ -113,3 +113,17 @@ button[type="submit"]:hover {
 button[type="submit"]:active {
   background-color: #004494;
 }
+
+.markdown-content p {
+  margin: 0.25rem 0;
+}
+
+.markdown-content ul,
+.markdown-content ol {
+  margin: 0.25rem 0;
+  margin-left: 1.5rem;
+}
+
+.markdown-content li {
+  margin: 0.1rem 0;
+}

@@ -26,7 +26,7 @@ async def rec_degreeworks_courses(completed_courses=None, grad_reqs=None, major=
                 course_recs.append([course['code'], course['name'], course['description']])
     return course_recs
 
-# Return the name, code, credits, description, prerequisites, and offerings this year for a course in input
+# Return the name, code, credits, description, prerequisites, difficulty, and offerings this year for a course in input
 async def course_info(course_number, department):
     with open('data/courses.json', 'r') as f:
         data = json.load(f)
@@ -37,8 +37,18 @@ async def course_info(course_number, department):
                 quarter for quarter in course["offered_quarters"] 
                 if int(quarter.split()[0]) >= CURRENT_YEAR
             ]
-            return [course["name"], course["code"], course["credits"], course["description"], course["prerequisites"], relevant_offerings]
-
+            return {
+                "name": course["name"],
+                "code": course["code"],
+                "credits": course["credits"],
+                "description": course["description"],
+                "prerequisites": course["prerequisites"],
+                "difficulty": course.get("difficulty", "unknown"),
+                "offered_quarters": relevant_offerings
+            }
+    return {
+        "error": f"Course {department}{course_number} not found"
+    }
 
 # Returns all courses user can take next quarter based on prereqs and offerings
 # let ai decide from those recs for smarter recommendations
@@ -50,15 +60,19 @@ async def plan_next_quarter(completed_courses=None, grad_reqs=None, preferred_nu
 
     for numRequired, courses in grad_reqs.items():
         for course in courses:
-            print(check_prereq(course, completed_courses), course['code'])
-            if course['code'] not in seen_codes and check_prereq(course, completed_courses) and NEXT_QUARTER in course['offered_quarters']:
+            if (course['code'] not in seen_codes and 
+                course['code'] not in completed_courses and 
+                check_prereq(course, completed_courses) and 
+                NEXT_QUARTER in course['offered_quarters']):
+
                 possible_courses_ct += 1
 
                 course_summary = {
                     "code": course['code'],
                     "name": course['name'],
                     "credits": course['credits'],
-                    "description": course['description']
+                    "description": course['description'],
+                    "difficulty": course['difficulty']
                 }
                 possible_courses[numRequired].append(course_summary)
                 all_possible_courses.append(course_summary)
@@ -78,7 +92,6 @@ async def plan_next_quarter(completed_courses=None, grad_reqs=None, preferred_nu
     }
 
 # Return the remaining requirements a user needs to graduate
-# Function used by assistant when planning a user's graduation
 async def get_remaining_requirements(completed_courses=None, grad_reqs=None):
     requirements_breakdown = {}
     
@@ -129,24 +142,12 @@ def check_prereq_tree(prereq_tree, completed_courses=None):
     if prereq_tree.get("OR"):
         return any(check_prereq_tree(child, completed_courses) for child in prereq_tree["OR"])
 
-    # Exams return false, should be handled in project though
+    # Exams return false here, should be handled in project though
     return False
-    
 
 # Normalize course id's to remove spaces to match course codes
 def normalize_course_id(course_id):
     return course_id.replace(' ', '').upper()
-
-# Returns all courses user can take based on their completed courses
-async def possible_courses(course_data, completed_courses):
-    courses_can_take = []
-
-    for course in course_data['courses']:
-        if (len(course['prerequisites']) > 0 
-            and course['code'] not in completed_courses 
-            and all(prereq in completed_courses for prereq in course['prerequisites'])):
-            courses_can_take.append(course)
-    return courses_can_take
 
 if __name__ == "__main__":
     import asyncio
@@ -154,5 +155,8 @@ if __name__ == "__main__":
     async def test():
         courses_completed = extract_courses_completed("/Users/zacharylai/Desktop/zach_degreeworks.pdf")
         courses_needed = extract_courses_needed("/Users/zacharylai/Desktop/zach_degreeworks.pdf")
+
+        q = await plan_next_quarter(completed_courses=courses_completed, grad_reqs=courses_needed, preferred_num_courses=3)
+        pprint(q['available_courses'])
     
     asyncio.run(test())

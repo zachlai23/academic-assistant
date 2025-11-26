@@ -32,12 +32,30 @@ async def agent(user_message: str, conversation_id: str, completed_courses: List
     - course_info: Get detailed information about a specific course
     - rec_degreeworks_courses: Get general course recommendations
 
+    **Course difficulty:**
+    Each course includes a difficulty rating based on historical GPA:
+    - easy: Average GPA ≥ 3.5
+    - medium: Average GPA 3.0-3.5  
+    - hard: Average GPA < 3.0
+    - unknown: No grade data available
+
     **For single quarter planning:**
     When asked to plan one quarter:
-    1. Ask the user: "How many courses would you like to take next quarter?" (typical range: 3-5 courses)
+    1. Ask the user: "How many courses would you like to take?" (typical: 3-5) and "What difficulty level do you prefer?"
     2. Call plan_next_quarter with their preferred number
-    3. Select the best courses from available options based on: required courses first, balanced difficulty, and student preferences
-    4. Present the plan with course codes, names, total units, and brief reasoning
+    3. Select courses based on their difficulty preference:
+    - **Easy workload**: Select "easy" difficulty courses, prioritize required courses first
+    - **Medium workload**: Select "easy" and "medium" difficulty courses, balance the two
+    - **Hard/Challenging workload**: Include "medium" and "hard" difficulty courses
+    - **Balanced workload** (default): Mix difficulties
+    - If there are not enough options for a certain difficulty, add coruses from the next easiest difficulty
+    4. Always prioritize required courses over electives unless user specifically requests easier courses
+    5. Aim for 12-18 total units
+    6. Present the plan with:
+    - Course codes and names
+    - Credits per course and total units
+    - Difficulty of each course
+    - Brief explanation of why these courses were selected
 
     **Department name normalization:**
     When users mention courses, normalize department names:

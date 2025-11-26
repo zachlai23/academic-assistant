@@ -148,15 +148,3 @@ def check_prereq_tree(prereq_tree, completed_courses=None):
 # Normalize course id's to remove spaces to match course codes
 def normalize_course_id(course_id):
     return course_id.replace(' ', '').upper()
-
-if __name__ == "__main__":
-    import asyncio
-    
-    async def test():
-        courses_completed = extract_courses_completed("/Users/zacharylai/Desktop/zach_degreeworks.pdf")
-        courses_needed = extract_courses_needed("/Users/zacharylai/Desktop/zach_degreeworks.pdf")
-
-        q = await plan_next_quarter(completed_courses=courses_completed, grad_reqs=courses_needed, preferred_num_courses=3)
-        pprint(q['available_courses'])
-    
-    asyncio.run(test())

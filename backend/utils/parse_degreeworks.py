@@ -168,10 +168,3 @@ def extract_courses_completed(filepath):
                         completed.append(code2)
 
     return completed
-
-
-if __name__ == "__main__":
-    codes = extract_courses_needed("/Users/zacharylai/Desktop/zach_degreeworks.pdf")
-    # completed = extract_courses_completed("/Users/zacharylai/Desktop/zach_degreeworks.pdf")
-    # pprint(completed)
-    # pprint(codes)

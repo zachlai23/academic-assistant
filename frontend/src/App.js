@@ -95,7 +95,7 @@ function App() {
 
   return (
     <div className="App">
-      <h1>Academic Assistant</h1>
+      <h1>UCI Academic Assistant</h1>
 
       <div className="uploadFile">
         <h3>Upload degreeworks pdf</h3>

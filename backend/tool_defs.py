@@ -68,20 +68,20 @@ next_quarter_plan = {
     "type": "function",
     "function": {
         "name": "plan_next_quarter",
-        "description": """Get all courses student can take next quarter (prerequisites met, offered next quarter). 
-        
+        "description": """Get all courses student can take next quarter (prerequisites met, offered next quarter).
+
         Returns:
-        - available_courses: Flat list of all valid courses with details
-        - courses_by_requirement: Courses grouped by requirement (key = number needed for graduation from that group)
-        
-        Select the best combination based on: student interest, required courses first, student preferred units or 12-18 units total.""",
+        - available_courses: Flat list of all valid courses with details (includes satisfies_requirement field)
+        - num_available: Number of available courses
+
+        Each course includes: code, name, credits, description, difficulty, satisfies_requirement (which requirement category it satisfies).""",
         "parameters": {
             "type": "object",
             "properties": {
                 "preferred_num_courses": {
                     "type": "integer",
                     "description": "Number of courses to select",
-                    "default": 4
+                    "default": 3
                 }
             },
             "required": []
@@ -100,8 +100,11 @@ start_graduation_planning_tool = {
         
         Returns:
         - session_id: Use this in all subsequent graduation planning calls
+        - graduation_quarter: Quarter user plans to graduate at the end of
         - quarters_to_plan: List of quarters to plan (e.g., ["Fall 2025", "Winter 2026", "Spring 2026"])
+        - quarters_remaining: Number of quarters remaining to plan
         - next_quarter: The first quarter to plan
+        - message: summary of graduation planning to be done
         
         After starting, use get_graduation_plan_for_quarter to see available courses for each quarter.""",
         "parameters": {
@@ -121,14 +124,21 @@ get_graduation_plan_for_quarter_tool = {
     "type": "function",
     "function": {
         "name": "get_graduation_plan_for_quarter",
-        "description": """Get available courses for a specific quarter during graduation planning.
-        
-        This uses the session's updated state - courses planned in previous quarters
-        are treated as completed when checking prerequisites.
-        
-        Must be called AFTER start_graduation_planning.
-        
-        Returns same format as plan_next_quarter but with updated prerequisites.""",
+        "description": """Get auto-selected courses for a specific quarter during graduation planning.
+
+        This function automatically selects courses for quarter:
+        - Prioritizes requirement groups with fewer available courses
+        - Ensures all requirement categories are addressed
+        - Uses updated state from previous quarters
+
+        Must be called after start_graduation_planning.
+
+        Returns:
+        - selected_courses: List of auto-selected course objects with code, name, credits, difficulty, satisfies_requirement
+        - num_selected: Number of courses selected
+        - message: Summary of selection
+
+        NOTE: This function automatically selects courses. You don't need to select them yourself.""",
         "parameters": {
             "type": "object",
             "properties": {
@@ -151,15 +161,19 @@ add_quarter_to_plan_tool = {
     "function": {
         "name": "add_quarter_to_plan",
         "description": """Add selected courses for a quarter to the graduation plan.
-        
-        This updates the session state:
-        - Adds courses to current_completed (for prerequisite checking in future quarters)
-        - Updates grad_reqs (removes satisfied requirements)
-        - Tracks the quarter in the plan
-        
-        Call this AFTER selecting courses from get_graduation_plan_for_quarter.
-        
-        Returns info about next quarter to plan.""",
+
+        This updates the session state.
+
+        Call this after get_graduation_plan_for_quarter with the courses it returned.
+
+        Returns:
+        - quarter_added: The quarter name
+        - courses_added: Number of courses added
+        - courses: List of added courses with code and name
+        - total_units: Total units for this quarter
+        - requirements_remaining: Whether graduation requirements are still unmet
+        - next_quarter: Next quarter to plan (or None if done)
+        - message: Summary message""",
         "parameters": {
             "type": "object",
             "properties": {
@@ -182,7 +196,7 @@ add_quarter_to_plan_tool = {
                             "difficulty": {"type": "string"}
                         }
                     },
-                    "description": "List of course objects selected for this quarter (must include code, name, credits)"
+                    "description": "List of course objects (use courses from get_graduation_plan_for_quarter response)"
                 }
             },
             "required": ["session_id", "quarter_name", "selected_courses"]
@@ -195,13 +209,18 @@ finish_graduation_plan_tool = {
     "function": {
         "name": "finish_graduation_plan",
         "description": """Finalize graduation planning and get complete summary.
-        
+
         Returns:
-        - Complete quarter-by-quarter plan
-        - Total courses and units
-        - Whether requirements are met
-        
-        Call this after planning all quarters or when requirements are satisfied.""",
+        - graduation_quarter: Target graduation quarter
+        - quarters_planned: Number of quarters in the plan
+        - total_courses: Total number of courses
+        - total_units: Total units across all quarters
+        - plan: Array of quarters with their courses
+        - requirements_remaining: Boolean indicating if requirements are still unmet
+
+        IMPORTANT: Check requirements_remaining before claiming success. If true, the plan is incomplete.
+
+        Call this after planning all quarters.""",
         "parameters": {
             "type": "object",
             "properties": {

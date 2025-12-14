@@ -115,37 +115,26 @@ async def start_graduation_planning(graduation_quarter, completed_courses, grad_
     }
 
 # Call quarter plan function with the updated completed courses/grad reqs
-async def get_graduation_plan_for_quarter(session_id, quarter_name):
-    if session_id not in graduation_sessions:
-        return {"error": "Session not found. Start a new graduation planning session."}
-    
-    session = graduation_sessions[session_id]
-
-    return await plan_next_quarter(
-        completed_courses=session.current_completed,
-        grad_reqs=session.current_grad_reqs,
-        preferred_num_courses=3
-    )
-
-# Add selected courses to graduation plan + call func to add to class variable
 async def add_quarter_to_plan(session_id, quarter_name, selected_courses):
     if session_id not in graduation_sessions:
         return {"error": "Session not found"}
     
     session = graduation_sessions[session_id]
     
-    # validate no duplicates
-    already_planned = [ c["code"] for q in session.planned_quarters for c in q["courses"] ]
+    # Error/duplicate validation
+    already_planned = [
+        c["code"] for q in session.planned_quarters for c in q["courses"]
+    ]
+
     for course in selected_courses:
         if course["code"] in already_planned:
-            return {"error": f"Course {course['code']} already planned"}
+            return {"error": f"{course['code']} already planned"}
     
     session.add_quarter(quarter_name, selected_courses)
     
-    # Determine next quarter
+    # bool for if grad requirements satisfied
     requirements_met = len(session.current_grad_reqs) == 0
-
-    # Update next_quarter, set to none if all quarters planned
+    
     if quarter_name == session.graduation_quarter:
         session.next_quarter = None
     else:
@@ -154,16 +143,94 @@ async def add_quarter_to_plan(session_id, quarter_name, selected_courses):
     return {
         "quarter_added": quarter_name,
         "courses_added": len(selected_courses),
-        "total_units": sum(c["credits"] for c in selected_courses),
+        "courses": [{"code": c["code"], "name": c["name"]} for c in selected_courses],
+        "total_units": sum(c.get("credits", 4) for c in selected_courses),
         "requirements_remaining": not requirements_met,
         "next_quarter": session.next_quarter,
-        "message": (
-            f"Added {len(selected_courses)} courses for {quarter_name}. " +
-            (f"Next: plan {session.next_quarter}" if session.next_quarter and not requirements_met 
-             else "All requirements met!" if requirements_met 
-             else "Planning complete")
-        )
+        "message": f"Added {len(selected_courses)} courses for {quarter_name}."
     }
+
+# Select courses based on requirement groups
+async def get_graduation_plan_for_quarter(session_id, quarter_name):
+    if session_id not in graduation_sessions:
+        return {"error": "Session not found"}
+    
+    session = graduation_sessions[session_id]
+    
+    courses_needed = 3  # Fix later to ask user how many courses per quarter
+    
+    # Returns all possible courses user can take
+    all_available = await plan_next_quarter(
+        completed_courses=session.current_completed,
+        grad_reqs=session.current_grad_reqs,
+        preferred_num_courses=courses_needed
+    )
+    
+    if "error" in all_available:
+        return all_available
+    
+    selected_courses = smart_course_selection(
+        all_available["available_courses"],
+        session.current_grad_reqs,
+        courses_needed
+    )
+    
+    return {
+        "selected_courses": selected_courses,
+        "num_selected": len(selected_courses),
+        "message": f"Auto-selected {len(selected_courses)} courses for {quarter_name}"
+    }
+
+# Select courses based on requirement groups, prioritize courses from groups with smaller requirement numbers
+def smart_course_selection(available_courses, grad_reqs, num_courses):
+    selected = []
+    
+    # group courses by requirement, need to fix the key ids so lists arent merged with same keys
+    courses_by_requirement = {}
+    for course in available_courses:
+        req = course.get("satisfies_requirement")
+        if req not in courses_by_requirement:
+            courses_by_requirement[req] = []
+        courses_by_requirement[req].append(course)
+    
+    # sort requirement groups
+    requirement_priority = sorted(
+        courses_by_requirement.keys(),
+        key=lambda req: len(courses_by_requirement[req])
+    )
+    
+    # select at least one course from each requirement group considering cumber of courses per quarter
+    for req in requirement_priority:
+        if len(selected) >= num_courses:
+            break
+        # get courses from this requirement that aren't selected yet
+        req_courses = [
+            c for c in courses_by_requirement[req] 
+            if c["code"] not in [s["code"] for s in selected]
+        ]
+        if req_courses:
+            selected.append(req_courses[0])
+    
+    # If courses left to be planned fill remaining slots with priority courses
+    while len(selected) < num_courses:
+        remaining = [
+            c for c in available_courses 
+            if c["code"] not in [s["code"] for s in selected]
+        ]
+        if not remaining:
+            break
+        for req in requirement_priority:
+            req_courses = [
+                c for c in remaining 
+                if c.get("satisfies_requirement") == req
+            ]
+            if req_courses:
+                selected.append(req_courses[0])
+                break
+        else:
+            selected.append(remaining[0])
+    
+    return selected
 
 # get final summary of grad plan
 async def finish_graduation_plan(session_id):

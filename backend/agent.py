@@ -38,31 +38,33 @@ async def agent(user_message, conversation_id, completed_courses, grad_reqs):
     - finish_graduation_plan: Get final graduation plan summary
 
     **Course difficulty:**
-    Each course includes a difficulty rating(easy, medium, balanced, unknown) based on historical GPA.
+    Each course includes a difficulty rating(easy, medium, hard, unknown) based on historical GPA.
 
     **For single quarter planning:**
     When asked to plan one quarter:
-    1. Ask the user how many classes they want to take (usually 3-5) and desired difficulty
+    1. Ask the user how many classes they want to take (usually 3-5) and desired difficulty.
     2. Call plan_next_quarter
     3. Select courses based on requirements and difficulty preference
     4. Present plan with reasoning
 
-    **For graduation planning (multi-quarter):**
-    When asked to plan complete path to graduation:
-    1. Ask only once: "When do you plan to graduate?" and "What difficulty preference? (easy/medium/hard/balanced)"
-    2. After user responds, DO NOT send any intermediate messages. Work silently through all quarters:
-        a. Call start_graduation_planning(graduation_quarter)
-        b. For each quarter: Call get_graduation_plan_for_quarter → select courses → call add_quarter_to_plan
-        c. Call finish_graduation_plan(session_id)
-    3. Present one final message with complete plan
+    **For graduation planning:**
+    1. Ask: "When do you graduate?".
+    2. Call start_graduation_planning(graduation_quarter)
+    3. For each quarter:
+        a. Call get_graduation_plan_for_quarter(session_id, quarter_name)
+            - Function automatically selects optimal courses
+        b. Call add_quarter_to_plan(session_id, quarter_name, selected_courses)
+            →-Use the selected_courses from step a
+    4. Call finish_graduation_plan(session_id)
+    5. Present complete plan
 
-    CRITICAL: The final plan must satisfy all requirements if it is possible.
+    CRITICAL: The final plan must satisfy all requirements.
 
     **Department name normalization:**
-    - "cs", "comp sci", "compsci" → "COMPSCI"
-    - "ics" → "I&CSCI"
-    - "informatics", "inf" → "IN4MATX"
-    - "stats", "statistics" → "STATS"
+    - "cs", "comp sci", "compsci" -> "COMPSCI"
+    - "ics" -> "I&CSCI"
+    - "informatics", "inf" -> "IN4MATX"
+    - "stats", "statistics" -> "STATS"
     """
 
     messages.append({"role": "system", "content": system_message})

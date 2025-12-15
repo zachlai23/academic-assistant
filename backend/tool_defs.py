@@ -98,7 +98,10 @@ start_graduation_planning_tool = {
         Creates a session that tracks state across multiple quarters.
         Use this when user asks to plan their complete path to graduation.
 
-        Always ask user about their interests first. Example: "Do you have any specific interests or focus areas? (AI, web development, databases,...)"
+        Always ask user:
+        1. "When do you want to graduate?" (e.g., Spring 2027)
+        2. "How many courses do you want to take per quarter?" (typically 3-5)
+        3. "Do you have any specific interests or focus areas?" (optional, e.g., AI, web development,...)
 
         Returns:
         - session_id: Use this in all subsequent graduation planning calls
@@ -119,6 +122,10 @@ start_graduation_planning_tool = {
                 "user_interests": {
                     "type": "string",
                     "description": "Optional. User's interests or focus areas as comma-separated keywords ('artificial intelligence, machine learning, data science'). If provided, courses matching these interests will be prioritized."
+                },
+                "courses_per_quarter": {
+                    "type": "integer",
+                    "description": "Number of courses to take per quarter. Typically 3-5. Defaults to 3 if not specified."
                 }
             },
             "required": ["graduation_quarter"]

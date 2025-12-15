@@ -48,9 +48,10 @@ async def agent(user_message, conversation_id, completed_courses, grad_reqs):
     4. Present plan with reasoning
 
     **For graduation planning:**
-    1. Ask: "When do you graduate?" and "Do you have any specific interests or focus areas? (e.g., AI, web development, systems)"
-    2. Call start_graduation_planning(graduation_quarter, user_interests)
+    1. Ask: "When do you graduate?", "How many courses do you want to take per quarter?", and "Do you have any specific interests or focus areas? (e.g., AI, web development, systems,..)"
+    2. Call start_graduation_planning(graduation_quarter, user_interests, courses_per_quarter)
         - user_interests is optional (can be None if user has no preferences)
+        - courses_per_quarter defaults to 3 if not specified
         - If provided, courses matching these interests will be prioritized
     3. For each quarter:
         a. Call get_graduation_plan_for_quarter(session_id, quarter_name)
@@ -123,7 +124,8 @@ async def agent(user_message, conversation_id, completed_courses, grad_reqs):
                         graduation_quarter=data.get("graduation_quarter"),
                         completed_courses=completed_courses,
                         grad_reqs=grad_reqs,
-                        user_interests=data.get("user_interests")
+                        user_interests=data.get("user_interests"),
+                        courses_per_quarter=data.get("courses_per_quarter", 3)
                     )
                 elif tool_name == "get_graduation_plan_for_quarter":
                     result = await get_graduation_plan_for_quarter(

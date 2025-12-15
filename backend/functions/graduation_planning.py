@@ -9,7 +9,7 @@ graduation_sessions = {}
 # saves state for graduation planning
 class GraduationSession:
 
-    def __init__(self, original_completed, original_grad_reqs, graduation_quarter, quarters_to_plan, user_interests=None):
+    def __init__(self, original_completed, original_grad_reqs, graduation_quarter, quarters_to_plan, user_interests=None, courses_per_quarter=3):
         self.original_completed = original_completed.copy()
         # Deep copy
         self.original_grad_reqs = {
@@ -30,6 +30,7 @@ class GraduationSession:
         self.next_quarter = "Winter 2026"
         self.quarters_to_plan = quarters_to_plan
         self.user_interests = user_interests
+        self.courses_per_quarter = courses_per_quarter
 
 
     # update class instance completed/grad reqs after a quarter is planned
@@ -101,7 +102,7 @@ def update_requirements(grad_reqs, planned_courses):
  
 # Initialize grad planning session - create session id + class instance
 # Returns dict with session id and planning info
-async def start_graduation_planning(graduation_quarter, completed_courses, grad_reqs, user_interests=None):
+async def start_graduation_planning(graduation_quarter, completed_courses, grad_reqs, user_interests=None, courses_per_quarter=3):
     session_id = str(uuid.uuid4())[:8]
 
     curr_quarter = "Winter 2026"
@@ -120,7 +121,7 @@ async def start_graduation_planning(graduation_quarter, completed_courses, grad_
         return {"error": f"Graduation quarter is invalid or in the past"}
 
     # Create graduation session
-    session = GraduationSession(completed_courses, grad_reqs, graduation_quarter, quarters_to_plan, user_interests)
+    session = GraduationSession(completed_courses, grad_reqs, graduation_quarter, quarters_to_plan, user_interests, courses_per_quarter)
     graduation_sessions[session_id] = session
 
     return {
@@ -129,7 +130,7 @@ async def start_graduation_planning(graduation_quarter, completed_courses, grad_
         "quarters_to_plan": quarters_to_plan,
         "quarters_remaining": quarters_until,
         "next_quarter": quarters_to_plan[0] if quarters_to_plan else None,
-        "message": f"Started planning for {graduation_quarter}. Plan {quarters_until} quarters. Start with {quarters_to_plan[0]}."
+        "message": f"Started planning for {graduation_quarter}. Plan {quarters_until} quarters with {courses_per_quarter} courses per quarter. Start with {quarters_to_plan[0]}."
     }
 
 # Call quarter plan function with the updated completed courses/grad reqs
@@ -175,7 +176,7 @@ async def get_graduation_plan_for_quarter(session_id, quarter_name):
 
     session = graduation_sessions[session_id]
 
-    courses_needed = 3  # Fix later to ask user how many courses per quarter
+    courses_needed = session.courses_per_quarter
 
     # Returns all possible courses user can take
     all_available = await plan_next_quarter(

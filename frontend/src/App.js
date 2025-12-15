@@ -98,10 +98,31 @@ function App() {
       <h1>UCI Academic Assistant</h1>
 
       <div className="uploadFile">
-        <h3>Upload degreeworks pdf</h3>
-        <input type="file" accept=".pdf" onChange={onFileChange} />
-        <button onClick={onFileUpload}>Upload!</button>
-        { degreeworksData && <div>File received!</div>}
+        <h3>Upload DegreeWorks PDF</h3>
+        <div className="upload-container">
+          <label htmlFor="file-input" className="file-input-label">
+            {selectedFile ? selectedFile.name : "Choose PDF file..."}
+          </label>
+          <input
+            id="file-input"
+            type="file"
+            accept=".pdf"
+            onChange={onFileChange}
+            className="file-input-hidden"
+          />
+          <button
+            onClick={onFileUpload}
+            className="upload-button"
+            disabled={!selectedFile}
+          >
+            Upload
+          </button>
+        </div>
+        {degreeworksData && (
+          <div className="upload-success">
+            ✓ File uploaded successfully!
+          </div>
+        )}
       </div>
 
       <div className="chatBox">

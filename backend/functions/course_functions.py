@@ -13,8 +13,8 @@ sys.path.append(str(Path(__file__).parent.parent))
 
 from utils.parse_degreeworks import extract_courses_needed, extract_courses_completed
 
-CURRENT_YEAR=2025
-NEXT_QUARTER='2025 Winter'
+CURRENT_YEAR=2026
+NEXT_QUARTER='2026 Winter'
 
 # Returns list of courses that user can take based on prereqs + is required for graduation
 async def rec_degreeworks_courses(completed_courses=None, grad_reqs=None, major="Computer Science"):
@@ -52,17 +52,24 @@ async def course_info(course_number, department):
 
 # Returns all courses user can take next quarter based on prereqs and offerings
 # let ai decide from those recs for smarter recommendations
-async def plan_next_quarter(completed_courses=None, grad_reqs=None, preferred_num_courses=3):
-    seen_codes = set()  
+async def plan_next_quarter(completed_courses=None, grad_reqs=None, preferred_num_courses=3, single_q_planning=True):
+    seen_codes = set()
     all_possible_courses = []
 
     for numRequired, courses in grad_reqs.items():
         for course in courses:
+            # Check offering validity based on planning type
+            if single_q_planning:
+                offering_valid = NEXT_QUARTER in course['offered_quarters'] # single quarter plannign checks if it is offered
+            else:
+                # Multi quarter graduation planning checks if offered recently, because offerings are not updated fullt on api
+                offering_valid = any('2025' in q or '2026' in q for q in course['offered_quarters'])
+
             # If course is valid
-            if (course['code'] not in seen_codes and 
-                course['code'] not in completed_courses and 
-                check_prereq(course, completed_courses) and 
-                NEXT_QUARTER in course['offered_quarters']):
+            if (course['code'] not in seen_codes and
+                course['code'] not in completed_courses and
+                check_prereq(course, completed_courses) and
+                offering_valid):
 
                 course_summary = {
                     "code": course['code'],

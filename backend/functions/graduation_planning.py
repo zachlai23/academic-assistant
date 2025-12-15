@@ -163,7 +163,8 @@ async def get_graduation_plan_for_quarter(session_id, quarter_name):
     all_available = await plan_next_quarter(
         completed_courses=session.current_completed,
         grad_reqs=session.current_grad_reqs,
-        preferred_num_courses=courses_needed
+        preferred_num_courses=courses_needed,
+        single_q_planning=False
     )
     
     if "error" in all_available:

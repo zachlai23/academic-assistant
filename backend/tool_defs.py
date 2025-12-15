@@ -13,7 +13,7 @@ rec_courses = {
                     },
                     "grad_reqs": {
                         "type": "object",
-                        "description": "Keys are number of courses needed from the value list to satisfy the degree.  Values are lists of course objects."
+                        "description": "Keys are unique requirement IDs. Values are objects with 'num_needed' (int) and 'courses' (list of course objects)."
                     }
                 }
             },
@@ -71,10 +71,10 @@ next_quarter_plan = {
         "description": """Get all courses student can take next quarter (prerequisites met, offered next quarter).
 
         Returns:
-        - available_courses: Flat list of all valid courses with details (includes satisfies_requirement field)
+        - available_courses: Flat list of all valid courses with details
         - num_available: Number of available courses
 
-        Each course includes: code, name, credits, description, difficulty, satisfies_requirement (which requirement category it satisfies).""",
+        Each course includes: code, name, credits, description, difficulty, satisfies_requirement (unique requirement ID), num_needed (how many courses needed from that requirement).""",
         "parameters": {
             "type": "object",
             "properties": {
@@ -94,10 +94,12 @@ start_graduation_planning_tool = {
     "function": {
         "name": "start_graduation_planning",
         "description": """Start a multi-quarter graduation planning session.
-        
+
         Creates a session that tracks state across multiple quarters.
         Use this when user asks to plan their complete path to graduation.
-        
+
+        Always ask user about their interests first. Example: "Do you have any specific interests or focus areas? (AI, web development, databases,...)"
+
         Returns:
         - session_id: Use this in all subsequent graduation planning calls
         - graduation_quarter: Quarter user plans to graduate at the end of
@@ -105,7 +107,7 @@ start_graduation_planning_tool = {
         - quarters_remaining: Number of quarters remaining to plan
         - next_quarter: The first quarter to plan
         - message: summary of graduation planning to be done
-        
+
         After starting, use get_graduation_plan_for_quarter to see available courses for each quarter.""",
         "parameters": {
             "type": "object",
@@ -113,6 +115,10 @@ start_graduation_planning_tool = {
                 "graduation_quarter": {
                     "type": "string",
                     "description": "Target graduation quarter (e.g., 'Spring 2026', 'Fall 2026')"
+                },
+                "user_interests": {
+                    "type": "string",
+                    "description": "Optional. User's interests or focus areas as comma-separated keywords ('artificial intelligence, machine learning, data science'). If provided, courses matching these interests will be prioritized."
                 }
             },
             "required": ["graduation_quarter"]
@@ -128,13 +134,14 @@ get_graduation_plan_for_quarter_tool = {
 
         This function automatically selects courses for quarter:
         - Prioritizes requirement groups with fewer available courses
+        - Matches courses to user interests (if provided during start_graduation_planning)
         - Ensures all requirement categories are addressed
         - Uses updated state from previous quarters
 
         Must be called after start_graduation_planning.
 
         Returns:
-        - selected_courses: List of auto-selected course objects with code, name, credits, difficulty, satisfies_requirement
+        - selected_courses: List of auto-selected course objects with code, name, credits, difficulty, satisfies_requirement, num_needed
         - num_selected: Number of courses selected
         - message: Summary of selection
 

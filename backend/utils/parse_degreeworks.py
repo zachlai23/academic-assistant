@@ -55,14 +55,13 @@ def course_codes(line, data):
 # Extract course codes from lines
 def clean_lines(lines, data):
     courses_map = {}
+    req_counter = 0  # counter used for unique requirement ids
 
     for line in lines:
         num_courses = re.search(r'(\d+)\s+Class', line)   # Extract how many classes are needed from folowing list
         num_needed = int(num_courses.group(1)) if num_courses else 0
 
         if num_needed != 0:
-            # courses_map[num_needed]= []
-
             # Extract rest of string after 'in' - department + numbers
             department = re.search(r'\s+in\s+(.+)$', line)
             if not department:
@@ -72,7 +71,14 @@ def clean_lines(lines, data):
             line = department.group(1)
 
             course_list = course_codes(line, data)
-            courses_map[num_needed] = course_list
+
+            # Create unique requirement id and store with num_needed and courses
+            req_id = f"req_{req_counter}"
+            courses_map[req_id] = {
+                "num_needed": num_needed,
+                "courses": course_list
+            }
+            req_counter += 1
 
     return courses_map
 

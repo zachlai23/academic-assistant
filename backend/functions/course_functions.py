@@ -20,7 +20,8 @@ NEXT_QUARTER='2026 Winter'
 async def rec_degreeworks_courses(completed_courses=None, grad_reqs=None, major="Computer Science"):
     course_recs = []
     # Loop through course requirements
-    for requiredCt, courses in grad_reqs.items():
+    for req_id, req_data in grad_reqs.items():
+        courses = req_data["courses"]
         for course in courses:
             if check_prereq(course, completed_courses):
                 course_recs.append([course['code'], course['name'], course['description']])
@@ -56,7 +57,10 @@ async def plan_next_quarter(completed_courses=None, grad_reqs=None, preferred_nu
     seen_codes = set()
     all_possible_courses = []
 
-    for numRequired, courses in grad_reqs.items():
+    for req_id, req_data in grad_reqs.items():
+        num_needed = req_data["num_needed"]
+        courses = req_data["courses"]
+
         for course in courses:
             # Check offering validity based on planning type
             if single_q_planning:
@@ -77,7 +81,8 @@ async def plan_next_quarter(completed_courses=None, grad_reqs=None, preferred_nu
                     "credits": course['credits'],
                     "description": course['description'],
                     "difficulty": course['difficulty'],
-                    "satisfies_requirement": numRequired
+                    "satisfies_requirement": req_id,
+                    "num_needed": num_needed
                 }
                 all_possible_courses.append(course_summary)
                 seen_codes.add(course['code'])
@@ -96,17 +101,20 @@ async def plan_next_quarter(completed_courses=None, grad_reqs=None, preferred_nu
 # Return the remaining requirements a user needs to graduate
 async def get_remaining_requirements(completed_courses=None, grad_reqs=None):
     requirements_breakdown = {}
-    
-    for num_required, courses in grad_reqs.items():
+
+    for req_id, req_data in grad_reqs.items():
+        num_needed = req_data["num_needed"]
+        courses = req_data["courses"]
+
         # Filter out completed courses
         remaining_courses = [
-            course for course in courses 
+            course for course in courses
             if course["code"] not in completed_courses
         ]
 
         # For each section collect breakdown of requirements
-        requirements_breakdown[num_required] = {
-            "num_needed": int(num_required),
+        requirements_breakdown[req_id] = {
+            "num_needed": num_needed,
             "num_available": len(remaining_courses),
             "sample_courses": [c["code"] for c in remaining_courses[:5]]  # Show first 5 as examples
         }

@@ -9,9 +9,10 @@ AI-powered chatbot that helps UCI students create personalized course schedules 
 * **AI-Powered Assistant**: Natural conversation interface powered by OpenAI API for context aware academic guidance.
 
 ### Tech Stack
-**Frontend**: React.js
-**Backend**: Python, FastAPI, OpenAI API
-**Data**: Anteater API
+* **Frontend**: React.js
+* **Backend**: Python, FastAPI, OpenAI API
+* **Data**: Anteater API
 
 This project was developed as part of AI @ UCI.
+
 
